@@ -1,0 +1,131 @@
+rules_version = '2';
+
+// =============================================================================
+// VibeCheck Firestore Security Rules
+// =============================================================================
+// Design summary:
+//  - publicQuizzes/{quizId}   -> readable by anyone (needed for friends to take
+//                                a quiz), writable only via Cloud Functions.
+//                                Never contains correct answers.
+//  - privateQuizzes/{quizId}  -> contains correct answers + owner info. Never
+//                                readable or writable by clients at all — only
+//                                the Admin SDK (Cloud Functions) touches it.
+//  - .../responses/{id}       -> friend answers + scores. Never client-writable
+//                                (that would let a friend forge their own score).
+//                                Not client-readable either, since the creator's
+//                                "dashboard access" is a bearer token, not a
+//                                Firebase Auth identity we can check in rules.
+//                                The dashboard reads responses through a Cloud
+//                                Function once modeling a real project; for this
+//                                reference implementation, direct reads are
+//                                intentionally denied and the client is expected
+//                                to call a "getMyQuizResponses" style callable.
+//  - users/{uid}              -> profile doc, owner read/write only.
+//  - users/{uid}/quizzes/{id} -> summaries of quizzes a user owns, owner only.
+//  - quizStats/{quizId}       -> aggregate counters, public read (used for the
+//                                landing page demo counters / quiz view counts),
+//                                writable only via Cloud Functions.
+// =============================================================================
+
+function isSignedIn() {
+  return request.auth != null;
+}
+
+function isOwner(uid) {
+  return isSignedIn() && request.auth.uid == uid;
+}
+
+function withinMaxLength(value, maxLen) {
+  return value is string && value.size() <= maxLen;
+}
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------------
+    // users/{uid} — basic profile, created on account upgrade.
+    // ---------------------------------------------------------------------
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid)
+        && withinMaxLength(request.resource.data.displayName, 60)
+        && request.resource.data.accountType in ['anonymous', 'permanent'];
+      allow update: if isOwner(uid)
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['displayName', 'email', 'photoURL', 'accountType', 'lastLoginAt']);
+      allow delete: if false;
+
+      // users/{uid}/quizzes/{quizId} — lightweight index of owned quizzes.
+      match /quizzes/{quizId} {
+        allow read: if isOwner(uid);
+        // Only Cloud Functions (Admin SDK bypasses rules) create/update/delete
+        // these — the client never writes quiz ownership records directly.
+        allow write: if false;
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // publicQuizzes/{quizId} — safe-to-share quiz data, no correct answers.
+    // ---------------------------------------------------------------------
+    match /publicQuizzes/{quizId} {
+      // Anyone can read an active quiz. Disabled/expired quizzes are still
+      // readable so the client can show a friendly "this quiz is disabled"
+      // state rather than a generic permission error — the isActive/expiresAt
+      // check happens in the UI, not in the rule, since hiding the doc entirely
+      // would surface as an opaque error instead.
+      allow read: if true;
+
+      // All writes (create on publish, update on settings change, delete on
+      // quiz deletion) go through Cloud Functions using the Admin SDK, which
+      // bypasses these rules. Direct client writes are always rejected so a
+      // friend can never edit quiz content or a creator can't bypass the
+      // token-hash check implemented server-side.
+      allow write: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // privateQuizzes/{quizId} — correct answers + owner/token metadata.
+    // ---------------------------------------------------------------------
+    match /privateQuizzes/{quizId} {
+      // Never directly readable or writable by any client. Correct answers
+      // must never leave the server. The dashboard gets response data through
+      // Cloud Functions (see functions/src) which verify the creator token
+      // server-side before returning anything.
+      allow read: if false;
+      allow write: if false;
+
+      match /responses/{responseId} {
+        // Friends cannot create their own response docs directly — that would
+        // let them submit a self-declared score. All submissions go through
+        // the submitQuizResponse callable, which validates answers server-side.
+        allow read: if false;
+        allow write: if false;
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // quizStats/{quizId} — aggregate counters, safe for public read.
+    // ---------------------------------------------------------------------
+    match /quizStats/{quizId} {
+      allow read: if true;
+      allow write: if false; // Only updated by Cloud Functions.
+    }
+
+    // ---------------------------------------------------------------------
+    // quizReports/{reportId} — moderation reports, write-only for clients.
+    // ---------------------------------------------------------------------
+    match /quizReports/{reportId} {
+      allow read: if false; // Report contents are never publicly visible.
+      allow create: if withinMaxLength(request.resource.data.quizId, 64)
+        && request.resource.data.reason in
+             ['Bullying', 'Harassment', 'Inappropriate content', 'Personal information', 'Spam', 'Other']
+        && withinMaxLength(request.resource.data.details, 500);
+      allow update, delete: if false;
+    }
+
+    // Deny everything else by default.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

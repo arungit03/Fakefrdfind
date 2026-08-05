@@ -1,0 +1,51 @@
+{
+  "nav": {
+    "home": "Home",
+    "howItWorks": "How It Works",
+    "features": "Features",
+    "createQuiz": "Create Quiz",
+    "about": "About",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "contact": "Contact"
+  },
+  "hero": {
+    "heading": "Who really knows you?",
+    "subheading": "Create a fun quiz about yourself, share it with your friends, and discover who understands you best.",
+    "primaryCta": "Create My Quiz",
+    "secondaryCta": "See How It Works"
+  },
+  "stats": {
+    "quizzesCreated": "Quizzes created",
+    "friendsTested": "Friends tested",
+    "answersSubmitted": "Answers submitted"
+  },
+  "howItWorks": {
+    "title": "How VibeCheck works",
+    "step1Title": "Create your quiz",
+    "step1Desc": "Answer a few fun questions about yourself and pick the correct choice for each one.",
+    "step2Title": "Share your unique link",
+    "step2Desc": "Send your quiz link, QR code, or WhatsApp message to your friends in seconds.",
+    "step3Title": "See who knows you best",
+    "step3Desc": "Watch responses roll in and check your private leaderboard as friends compete."
+  },
+  "features": {
+    "title": "Everything you need to test your friendships",
+    "custom": "Custom friendship questions",
+    "instant": "Instant score",
+    "dashboard": "Private dashboard",
+    "leaderboard": "Friend leaderboard",
+    "whatsapp": "WhatsApp sharing",
+    "qr": "QR code",
+    "mobile": "Mobile-friendly experience",
+    "noSignup": "No complicated registration"
+  },
+  "cta": {
+    "title": "Ready to test your friendships?",
+    "button": "Create Your Quiz"
+  },
+  "footer": {
+    "tagline": "Who really knows you?",
+    "copyright": "All rights reserved."
+  }
+}

@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-vibe-lavender text-slate-900 font-sans antialiased transition-colors duration-300;
+    @apply dark:bg-vibe-navy-950 dark:text-slate-100;
+    margin: 0;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-display;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-vibe-violet-500 ring-offset-2 ring-offset-white dark:ring-offset-vibe-navy-950;
+  }
+
+  ::selection {
+    @apply bg-vibe-violet-300/60 text-vibe-violet-900;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-card;
+  }
+
+  .vibe-gradient-text {
+    @apply bg-vibe-gradient bg-clip-text text-transparent;
+  }
+
+  .shimmer-bg {
+    background: linear-gradient(90deg, rgba(139,92,246,0.08) 25%, rgba(139,92,246,0.18) 37%, rgba(139,92,246,0.08) 63%);
+    background-size: 400% 100%;
+    @apply animate-shimmer;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-vibe-violet-300/60 dark:bg-vibe-violet-700/60 rounded-full;
+}
